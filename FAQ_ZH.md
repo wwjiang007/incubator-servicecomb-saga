@@ -2,7 +2,7 @@
 
 **Q1: Saga的执行是同步的还是异步的？发起Saga之后，是等所有Sub-transaction都完成才返回，还是立即返回？**
 
-目前Saga事情的执行是同步的，后续我们会提供异步方式的实现。
+目前Saga事务的执行是同步的，后续我们会提供异步方式的实现。
 
 
 **Q2: Saga是并行还是顺序执行Sub-transaction的？**
@@ -44,3 +44,6 @@ Saga Alpha在设计过程中状态信息都存储到数据库，是支持水平�
 
 参阅这篇[文档](docs/faq/cn/how_to_use_mysql_as_alpha_backend_database.md)
 
+**Q9: 如何解决Omega不执行Alpha下发的指令?
+
+参阅这篇[文档](docs/faq/cn/omega-cannot-run-command-from-alpha.md)

@@ -25,10 +25,10 @@
     <version>18</version>
   </parent>
 
-  <groupId>org.apache.servicecomb.saga</groupId>
-  <artifactId>saga</artifactId>
+  <groupId>org.apache.servicecomb.pack</groupId>
+  <artifactId>pack</artifactId>
   <packaging>pom</packaging>
-  <version>0.3.0-SNAPSHOT</version>
+  <version>0.6.0-SNAPSHOT</version>
 
   <modules>
     <module>docker-build-config</module>
@@ -37,24 +37,32 @@
     <module>pack-contracts</module>
     <module>pack-common</module>
     <module>integration-tests</module>
-    <module>saga-persistence</module>
+    <module>persistence</module>
+    <module>web</module>
   </modules>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.8</java.version>
-    <kamon.version>0.6.7</kamon.version>
-    <log4j.version>2.6.2</log4j.version>
-    <dubbo.version>2.6.1</dubbo.version>
-    <spring.boot.version>1.5.13.RELEASE</spring.boot.version>
-    <spring.boot2.version>2.0.2.RELEASE</spring.boot2.version>
-    <java.chassis.version>1.0.0-m2</java.chassis.version>
-    <spring.version>4.3.7.RELEASE</spring.version>
-    <akka.version>2.5.6</akka.version>
+    <!-- using log4j 2.7 with Spring Boot 1.x -->
+    <log4j.version>2.7</log4j.version>
+    <disruptor.version>3.3.7</disruptor.version>
+    <dubbo.version>2.6.4</dubbo.version>
+    <spring.boot.version>2.1.6.RELEASE</spring.boot.version>
+    <spring.cloud.version>2.1.1.RELEASE</spring.cloud.version>
+    <spring.cloud.starter.consul.discovery.version>2.1.1.RELEASE</spring.cloud.starter.consul.discovery.version>
+    <spring.cloud.starter.zookeeper.discovery.version>2.1.1.RELEASE</spring.cloud.starter.zookeeper.discovery.version>
+    <spring.cloud.starter.alibaba.nacos.discovery.version>0.2.2.RELEASE</spring.cloud.starter.alibaba.nacos.discovery.version>
+
+    <java.chassis.version>1.2.1</java.chassis.version>
+    <akka.version>2.5.14</akka.version>
+    <alpakka.version>1.0.5</alpakka.version>
+    <leveldbjni-all.version>1.8</leveldbjni-all.version>
+    <akka-persistence-redis.version>0.4.0</akka-persistence-redis.version>
     <rat.version>0.12</rat.version>
     <maven.failsafe.version>2.19.1</maven.failsafe.version>
-    <grpc.version>1.11.0</grpc.version>
+    <grpc.version>1.22.0</grpc.version>
     <kryo.version>4.0.1</kryo.version>
     <javax.transaction.version>1.2</javax.transaction.version>
     <eclipse.link.version>2.7.1</eclipse.link.version>
@@ -63,13 +71,17 @@
     <jaxb.version>2.3.0</jaxb.version>
     <javax.activation.version>1.1.1</javax.activation.version>
     <maven-dependency-plugin.version>3.0.2</maven-dependency-plugin.version>
-    <netty.boringssl.version>2.0.7.Final</netty.boringssl.version>
-    <java-chassis.version>1.0.0-m2</java-chassis.version>
+    <netty.boringssl.version>2.0.25.Final</netty.boringssl.version>
+    <netty.version>4.1.35.Final</netty.version>
+    <zookeeper.version>3.4.13</zookeeper.version>
+    <kafka.version>2.1.1</kafka.version>
+    <hystrix.version>1.5.12</hystrix.version>
+    <openfeign.version>9.5.1</openfeign.version>
   </properties>
 
-  <name>ServiceComb Saga</name>
+  <name>Apache ServiceComb Pack</name>
   <description>Eventual consistency component for distributed systems</description>
-  <url>https://github.com/apache/incubator-servicecomb-saga</url>
+  <url>https://github.com/apache/servicecomb-pack</url>
 
   <licenses>
     <license>
@@ -112,9 +124,9 @@
   </organization>
 
   <scm>
-    <connection>scm:git:https://github.com/apache/incubator-servicecomb-saga.git</connection>
-    <developerConnection>scm:git:https://github.com/apache/incubator-servicecomb-saga.git</developerConnection>
-    <url>https://github.com/apache/incubator-servicecomb-saga</url>
+    <connection>scm:git:https://github.com/apache/servicecomb-saga.git</connection>
+    <developerConnection>scm:git:https://github.com/apache/servicecomb-saga.git</developerConnection>
+    <url>https://github.com/apache/servicecomb-saga</url>
     <tag>${project.version}</tag>
   </scm>
 
@@ -123,74 +135,267 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.objenesis</groupId>
+        <artifactId>objenesis</artifactId>
+        <version>2.6</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>20.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.ow2.asm</groupId>
+        <artifactId>asm</artifactId>
+        <version>5.0.4</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml</groupId>
+        <artifactId>classmate</artifactId>
+        <version>1.3.4</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>3.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb</groupId>
+        <artifactId>java-chassis-core</artifactId>
+        <version>${java.chassis.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-codec</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-codec-http</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-codec-http2</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-common</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-buffer</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-codec-dns</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-codec-socks</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-handler-proxy</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-resolver</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-resolver-dns</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport</artifactId>
+        <version>${netty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport-native-kqueue</artifactId>
+        <version>${netty.version}</version>
+        <classifier>osx-x86_64</classifier>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-transport-native-epoll</artifactId>
+        <version>${netty.version}</version>
+        <classifier>linux-x86_64</classifier>
+      </dependency>
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>2.8.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>3.3.2.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb.pack</groupId>
+        <artifactId>omega-transport-feign</artifactId>
+        <version>0.6.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb.pack.transports</groupId>
+        <artifactId>transport-httpclient</artifactId>
+        <version>0.6.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>omega-context</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>0.6.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>omega-transaction</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>omega-spring-tx</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>omega-transport-resttemplate</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>omega-transport-dubbo</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>omega-transport-servicecomb</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>omega-connector-grpc</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>omega-spring-starter</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
+        <artifactId>omega-spring-cloud-consul-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb.pack</groupId>
+        <artifactId>omega-spring-cloud-zookeeper-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb.pack</groupId>
+        <artifactId>omega-spring-cloud-nacos-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>omega-format</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>alpha-core</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
+        <artifactId>alpha-fsm</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+     <dependency>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>alpha-server</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
+        <artifactId>alpha-ui</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb.pack</groupId>
+        <artifactId>alpha-spring-cloud-starter-eureka</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb.pack</groupId>
+        <artifactId>alpha-spring-cloud-starter-consul</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb.pack</groupId>
+        <artifactId>alpha-spring-cloud-starter-zookeeper</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb.pack</groupId>
+        <artifactId>alpha-spring-cloud-starter-nacos</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>pack-contract-grpc</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.servicecomb.saga</groupId>
+        <groupId>org.apache.servicecomb.pack</groupId>
         <artifactId>pack-common</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
-       <groupId>org.apache.servicecomb.saga</groupId>
-       <artifactId>saga-persistence-jpa</artifactId>
-       <version>0.3.0-SNAPSHOT</version>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-consul-discovery</artifactId>
+        <version>${spring.cloud.starter.consul.discovery.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-zookeeper-discovery</artifactId>
+        <version>${spring.cloud.starter.zookeeper.discovery.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        <version>${spring.cloud.starter.alibaba.nacos.discovery.version}</version>
+      </dependency>
+      <!-- TODO rename this artifact -->
+      <dependency>
+       <groupId>org.apache.servicecomb.pack</groupId>
+       <artifactId>persistence-jpa</artifactId>
+       <version>0.6.0-SNAPSHOT</version>
        </dependency>
       <dependency>
         <groupId>commons-io</groupId>
@@ -201,6 +406,11 @@
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>1.7.25</version>
+      </dependency>
+      <dependency>
+        <groupId>com.lmax</groupId>
+        <artifactId>disruptor</artifactId>
+        <version>${disruptor.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
@@ -218,94 +428,49 @@
         <version>${log4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>io.kamon</groupId>
-        <artifactId>kamon-core_2.12</artifactId>
-        <version>${kamon.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.12</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>io.kamon</groupId>
-        <artifactId>kamon-annotation_2.12</artifactId>
-        <version>${kamon.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.12</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>io.kamon</groupId>
-        <artifactId>kamon-log-reporter_2.12</artifactId>
-        <version>${kamon.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.12</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>io.kamon</groupId>
-        <artifactId>kamon-statsd_2.12</artifactId>
-        <version>${kamon.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.12</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>io.kamon</groupId>
-        <artifactId>kamon-autoweave_2.12</artifactId>
-        <version>${kamon.version}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.12</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>org.aspectj</groupId>
         <artifactId>aspectjweaver</artifactId>
         <version>1.8.10</version>
       </dependency>
       <dependency>
-        <groupId>com.lmax</groupId>
-        <artifactId>disruptor</artifactId>
-        <version>3.3.6</version>
-      </dependency>
-      <dependency>
         <groupId>com.typesafe.akka</groupId>
         <artifactId>akka-actor_2.12</artifactId>
         <version>${akka.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.typesafe.akka</groupId>
+        <artifactId>akka-persistence-typed_2.12</artifactId>
+        <version>${akka.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.typesafe.akka</groupId>
+        <artifactId>akka-cluster-typed_2.12</artifactId>
+        <version>${akka.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.typesafe.akka</groupId>
+        <artifactId>akka-cluster-sharding-typed_2.12</artifactId>
+        <version>${akka.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.typesafe.akka</groupId>
+        <artifactId>akka-stream-kafka_2.12</artifactId>
+        <version>${alpakka.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.typesafe.akka</groupId>
+        <artifactId>akka-cluster-metrics_2.12</artifactId>
+        <version>${akka.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.safety-data</groupId>
+        <artifactId>akka-persistence-redis_2.12</artifactId>
+        <version>${akka-persistence-redis.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.fusesource.leveldbjni</groupId>
+        <artifactId>leveldbjni-all</artifactId>
+        <version>${leveldbjni-all.version}</version>
       </dependency>
       <dependency>
         <groupId>com.typesafe.akka</groupId>
@@ -333,6 +498,11 @@
         <version>${grpc.version}</version>
       </dependency>
       <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-testing</artifactId>
+        <version>${grpc.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.esotericsoftware</groupId>
         <artifactId>kryo</artifactId>
         <version>${kryo.version}</version>
@@ -353,10 +523,25 @@
         <version>1.2</version>
       </dependency>
       <dependency>
-      <groupId>org.eclipse.persistence</groupId>
-      <artifactId>org.eclipse.persistence.jpa</artifactId>
-      <version>${eclipse.link.version}</version>
-    </dependency>
+        <groupId>org.eclipse.persistence</groupId>
+        <artifactId>org.eclipse.persistence.jpa</artifactId>
+        <version>${eclipse.link.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.6</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-clients</artifactId>
+        <version>${kafka.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.netflix.hystrix</groupId>
+        <artifactId>hystrix-core</artifactId>
+        <version>${hystrix.version}</version>
+      </dependency>
 
       <!-- test dependencies -->
       <dependency>
@@ -390,12 +575,6 @@
         <scope>test</scope>
       </dependency>
       <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-lang3</artifactId>
-        <version>3.6</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
         <groupId>org.awaitility</groupId>
         <artifactId>awaitility</artifactId>
         <version>3.0.0</version>
@@ -425,18 +604,44 @@
         <version>3.0.3</version>
         <scope>test</scope>
       </dependency>
-      <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-test</artifactId>
-        <version>${spring.version}</version>
-        <scope>test</scope>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <build>
     <pluginManagement>
       <plugins>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>1.19</version>
+        <executions>
+          <execution>
+            <id>default-cli</id>
+            <configuration>
+              <!-- Accept the pom module -->
+              <acceptPomPackaging>true</acceptPomPackaging>
+              <!-- Using the template which is grouped by License file -->
+              <fileTemplate>/org/codehaus/mojo/license/third-party-file-groupByMultiLicense.ftl</fileTemplate>
+              <licenseMerges>
+                <licenseMerge>The Apache Software License, Version 2.0|The Apache License, Version 2.0</licenseMerge>
+                <licenseMerge>The Apache Software License, Version 2.0|Apache License, Version 2.0</licenseMerge>
+                <licenseMerge>The Apache Software License, Version 2.0|Apache Public License 2.0</licenseMerge>
+                <licenseMerge>The Apache Software License, Version 2.0|Apache 2</licenseMerge>
+                <licenseMerge>The Apache Software License, Version 2.0|Apache 2.0</licenseMerge>
+                <licenseMerge>The Apache Software License, Version 2.0|Apache-2.0</licenseMerge>
+                <licenseMerge>The Apache Software License, Version 2.0|Apache License 2.0</licenseMerge>
+                <licenseMerge>The Apache Software License, Version 2.0|Apache License, version 2.0</licenseMerge>
+                <licenseMerge>3-Clause BSD License|BSD 3-clause</licenseMerge>
+                <licenseMerge>3-Clause BSD License|BSD 3-Clause</licenseMerge>
+                <licenseMerge>Eclipse Public License v1.0|Eclipse Public License 1.0</licenseMerge>
+                <licenseMerge>Eclipse Public License v1.0|Eclipse Public License - v 1.0</licenseMerge>
+                <licenseMerge>The MIT License|MIT License</licenseMerge>
+              </licenseMerges>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
         <plugin>
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
@@ -463,7 +668,7 @@
         <plugin>
           <groupId>io.fabric8</groupId>
           <artifactId>docker-maven-plugin</artifactId>
-          <version>0.26.0</version>
+          <version>0.28.0</version>
         </plugin>
         <plugin>
           <groupId>com.github.odavid.maven.plugins</groupId>
@@ -473,7 +678,7 @@
           <configuration>
             <mixins>
               <mixin>
-                <groupId>org.apache.servicecomb.saga</groupId>
+                <groupId>org.apache.servicecomb.pack</groupId>
                 <artifactId>docker-build-config</artifactId>
                 <version>${project.version}</version>
               </mixin>
@@ -575,7 +780,6 @@
               <configuration>
                 <resourceBundles>
                   <resourceBundle>org.apache:apache-jar-resource-bundle:1.4</resourceBundle>
-                  <resourceBundle>org.apache:apache-incubator-disclaimer-resource-bundle:1.1</resourceBundle>
                 </resourceBundles>
                 <properties>
                   <projectName>Apache ServiceComb</projectName>
@@ -643,8 +847,8 @@
     <profile>
       <id>release</id>
       <modules>
-        <module>saga-demo</module>
-        <module>saga-distribution</module>
+        <module>demo</module>
+        <module>distribution</module>
       </modules>
       <build>
         <plugins>
@@ -705,7 +909,7 @@
     <profile>
       <id>demo</id>
       <modules>
-        <module>saga-demo</module>
+        <module>demo</module>
         <module>acceptance-tests</module>
       </modules>
     </profile>

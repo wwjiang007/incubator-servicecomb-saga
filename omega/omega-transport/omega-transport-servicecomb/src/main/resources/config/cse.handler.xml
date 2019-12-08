@@ -16,8 +16,14 @@
   -->
 
 <config>
+  <handler id="pack-consumer"
+    class="org.apache.servicecomb.pack.omega.transport.servicecomb.PackConsumerHandler" />
+  <handler id="pack-provider"
+    class="org.apache.servicecomb.pack.omega.transport.servicecomb.PackProviderHandler" />
+
+  <!-- Just keep the old handle name for backward compatibility -->
   <handler id="saga-consumer"
-    class="org.apache.servicecomb.saga.omega.transport.servicecomb.SagaConsumerHandler" />
+    class="org.apache.servicecomb.pack.omega.transport.servicecomb.PackConsumerHandler" />
   <handler id="saga-provider"
-    class="org.apache.servicecomb.saga.omega.transport.servicecomb.SagaProviderHandler" />
+    class="org.apache.servicecomb.pack.omega.transport.servicecomb.PackProviderHandler" />
 </config>
